@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package streaming;
+
+// Service for ingesting data into Kafka
+service IngestionService {
+  // Send a single message to Kafka
+  rpc IngestMessage(IngestionRequest) returns (IngestionResponse) {}
+  
+  // Send a batch of messages to Kafka
+  rpc IngestBatch(BatchIngestionRequest) returns (BatchIngestionResponse) {}
+}
+
+// Request to ingest a single message
+message IngestionRequest {
+  // Kafka topic to write to
+  string topic = 1;
+  
+  // Message payload (serialized protobuf)
+  bytes payload = 2;
+  
+  // Optional message key
+  bytes key = 3;
+  
+  // Client identifier for tracking/monitoring
+  string client_id = 4;
+}
+
+// Response from ingestion request
+message IngestionResponse {
+  // Whether the message was successfully delivered
+  bool success = 1;
+  
+  // Error message if delivery failed
+  string error_message = 2;
+}
+
+// Entry in a batch ingestion request
+message BatchEntry {
+  // Message payload (serialized protobuf)
+  bytes payload = 1;
+  
+  // Optional message key
+  bytes key = 2;
+}
+
+// Request to ingest a batch of messages
+message BatchIngestionRequest {
+  // Kafka topic to write to
+  string topic = 1;
+  
+  // Batch of messages
+  repeated BatchEntry entries = 2;
+  
+  // Client identifier for tracking/monitoring
+  string client_id = 3;
+}
+
+// Response from batch ingestion request
+message BatchIngestionResponse {
+  // Success status for each message in the batch
+  repeated bool success_statuses = 1;
+  
+  // Overall batch error message if applicable
+  string error_message = 2;
+}

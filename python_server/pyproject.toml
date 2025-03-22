@@ -1,0 +1,19 @@
+[project]
+name = "grpc-kafka-ingester"
+version = "0.1.0"
+description = "gRPC Kafka ingestion service"
+authors = [
+    {name = "User"}
+]
+requires-python = ">=3.9"
+dependencies = [
+    "grpcio==1.59.0",
+    "grpcio-tools==1.59.0",
+    "protobuf==4.24.4",
+    "kafka-python==2.0.2",
+    "python-dotenv==1.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
