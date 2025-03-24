@@ -6,22 +6,25 @@ package streaming;
 service IngestionService {
   // Send a single message to Kafka
   rpc IngestMessage(IngestionRequest) returns (IngestionResponse) {}
-  
+
   // Send a batch of messages to Kafka
   rpc IngestBatch(BatchIngestionRequest) returns (BatchIngestionResponse) {}
+
+  // Subscribe to a topic stream
+  rpc TopicStream(TopicStreamRequest) returns (stream TopicStreamResponse) {}
 }
 
 // Request to ingest a single message
 message IngestionRequest {
   // Kafka topic to write to
   string topic = 1;
-  
+
   // Message payload (serialized protobuf)
   bytes payload = 2;
-  
+
   // Optional message key
   bytes key = 3;
-  
+
   // Client identifier for tracking/monitoring
   string client_id = 4;
 }
@@ -30,7 +33,7 @@ message IngestionRequest {
 message IngestionResponse {
   // Whether the message was successfully delivered
   bool success = 1;
-  
+
   // Error message if delivery failed
   string error_message = 2;
 }
@@ -39,7 +42,7 @@ message IngestionResponse {
 message BatchEntry {
   // Message payload (serialized protobuf)
   bytes payload = 1;
-  
+
   // Optional message key
   bytes key = 2;
 }
@@ -48,10 +51,10 @@ message BatchEntry {
 message BatchIngestionRequest {
   // Kafka topic to write to
   string topic = 1;
-  
+
   // Batch of messages
   repeated BatchEntry entries = 2;
-  
+
   // Client identifier for tracking/monitoring
   string client_id = 3;
 }
@@ -60,7 +63,22 @@ message BatchIngestionRequest {
 message BatchIngestionResponse {
   // Success status for each message in the batch
   repeated bool success_statuses = 1;
-  
+
   // Overall batch error message if applicable
   string error_message = 2;
+}
+
+// Request to subscribe to a topic stream
+message TopicStreamRequest {
+  // Kafka topic to subscribe to
+  string topic = 1;
+
+  // Client identifier for tracking/monitoring
+  string client_id = 2;
+}
+
+// Response from topic stream request
+message TopicStreamResponse {
+  // Message payload (serialized protobuf)
+  bytes payload = 1;
 }

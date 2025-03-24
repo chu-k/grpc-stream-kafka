@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 
 import grpc
 from dotenv import load_dotenv
-from kafka import KafkaProducer
+from kafka import KafkaProducer, KafkaConsumer
 from kafka.errors import KafkaError, NoBrokersAvailable
 from retrying import retry
 from kafka.cluster import ClusterMetadata
@@ -238,6 +238,61 @@ class IngestionServiceImpl(ingester_pb2_grpc.IngestionServiceServicer):
                 error_message="" if success else "Failed to deliver message to Kafka"
             )
             yield response
+
+    def TopicStream(self, request, context):
+        """Handle topic stream requests"""
+        topic = request.topic
+        client_id = request.client_id
+
+        logger.info(f"TopicStream request from {client_id} for topic {topic}")
+
+        try:
+            # Create a Kafka consumer for the topic
+            consumer = KafkaConsumer(
+                topic,
+                bootstrap_servers=self.kafka_manager.config['kafka_brokers'],
+                group_id=f"topic_stream_{client_id}",  # Unique consumer group per client
+                auto_offset_reset='latest',
+                enable_auto_commit=True,
+                consumer_timeout_ms=1000  # 1 second timeout for poll
+            )
+
+            # Stream messages to the client
+            try:
+                while context.is_active():  # Check if client is still connected
+                    # Poll for messages
+                    message_batch = consumer.poll(timeout_ms=1000)
+
+                    for partition_batch in message_batch.values():
+                        for message in partition_batch:
+                            # Create response message
+                            response = ingester_pb2.TopicStreamResponse(
+                                success=True,
+                                payload=message.value,
+                                key=message.key if message.key else None,
+                                partition=message.partition,
+                                offset=message.offset,
+                                timestamp=message.timestamp
+                            )
+                            yield response
+
+            except Exception as e:
+                logger.error(f"Error while streaming messages for {client_id}: {str(e)}")
+                yield ingester_pb2.TopicStreamResponse(
+                    success=False,
+                    error_message=f"Stream error: {str(e)}"
+                )
+            finally:
+                # Clean up consumer
+                consumer.close()
+                logger.info(f"Closed Kafka consumer for client {client_id}")
+
+        except Exception as e:
+            logger.error(f"Failed to create consumer for {client_id}: {str(e)}")
+            yield ingester_pb2.TopicStreamResponse(
+                success=False,
+                error_message=f"Failed to create consumer: {str(e)}"
+            )
 
 
 def serve():
